@@ -1,0 +1,214 @@
+package test;
+
+public class Staff {
+
+	private long id;
+	private String firstName;
+	private String lastName;
+	private String nickname;
+	private double salary;
+	
+	public Staff() {
+		super();
+	}
+	public Staff(long id, String firstName, String lastName, String nickname,
+			double salary) {
+		super();
+		this.id = id;
+		this.firstName = firstName;
+		this.lastName = lastName;
+		this.nickname = nickname;
+		this.salary = salary;
+	}
+	public long getId() {
+		return id;
+	}
+	public void setId(long id) {
+		this.id = id;
+	}
+	public String getFirstName() {
+		return firstName;
+	}
+	public void setFirstName(String firstName) {
+		this.firstName = firstName;
+	}
+	public String getLastName() {
+		return lastName;
+	}
+	public void setLastName(String lastName) {
+		this.lastName = lastName;
+	}
+	public String getNickname() {
+		return nickname;
+	}
+	public void setNickname(String nickname) {
+		this.nickname = nickname;
+	}
+	public double getSalary() {
+		return salary;
+	}
+	public void setSalary(double salary) {
+		this.salary = salary;
+	}
+}
+
+
+package test;
+
+import java.sql.Connection;
+import java.sql.DriverManager;
+
+public class DBConnection {
+
+	private static Connection con;
+	private static final String DRIVER_NAME ="oracle.jdbc.driver.OracleDriver";
+	private static final String URL = "jdbc:oracle:thin:@localhost:1521:xe";
+	private static final String USER_NAME = "system";
+	private static final String USER_PASS = "system";
+	
+	static{
+		try{
+			Class.forName(DRIVER_NAME);
+			con = DriverManager.getConnection(URL,USER_NAME,USER_PASS);
+			
+			
+		}catch(Exception e){
+			e.printStackTrace();
+		}
+	}
+	
+	
+	public static Connection getConnection(){
+		return con;
+	}
+	
+	
+	
+}
+
+
+package test;
+
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+
+public class MainDao {
+
+	static int count = 0;
+	public boolean saveRecord(Staff staff){
+		boolean status = false;
+		try{
+			Connection con = DBConnection.getConnection();
+			String query ="insert into company_staff (id,first_name,last_name,nick_name,salary) values(?,?,?,?,?)";
+			PreparedStatement ps = con.prepareStatement(query);
+			ps.setLong(1,++count);
+			ps.setString(2, staff.getFirstName());
+			ps.setString(3, staff.getLastName());
+			ps.setString(4, staff.getNickname());
+			ps.setDouble(5, staff.getSalary());
+			ps.executeUpdate();
+			System.out.println("Record inserted ..." +count);
+		}catch(Exception e){
+			e.printStackTrace();
+		}
+		return status;
+	}
+}
+
+
+package test;
+
+import javax.xml.parsers.SAXParser;
+import javax.xml.parsers.SAXParserFactory;
+
+import org.xml.sax.*;
+import org.xml.sax.helpers.DefaultHandler;
+
+public class ReadXMLFile {
+
+	public static void main(String argv[]) {
+
+	    try {
+			SAXParserFactory factory = SAXParserFactory.newInstance();
+			SAXParser saxParser = factory.newSAXParser();
+	
+				DefaultHandler handler = new DefaultHandler() {
+		
+				boolean bfname = false;
+				boolean blname = false;
+				boolean bnname = false;
+				boolean bsalary = false;
+				boolean staftag = false;
+				Staff staff = null;
+				public void startElement(String uri, String localName,String qName, 
+		                Attributes attributes) throws SAXException {
+					
+					System.out.println("Start Element :" + qName);
+					if (qName.equalsIgnoreCase("staff")) {
+						staftag = true;
+						staff =  new Staff();
+					}
+					if (qName.equalsIgnoreCase("FIRSTNAME")) {
+						bfname = true;
+					}
+		
+					if (qName.equalsIgnoreCase("LASTNAME")) {
+						blname = true;
+					}
+		
+					if (qName.equalsIgnoreCase("NICKNAME")) {
+						bnname = true;
+					}
+		
+					if (qName.equalsIgnoreCase("SALARY")) {
+						bsalary = true;
+					}
+	
+			}
+	
+			public void endElement(String uri, String localName,
+				String qName) throws SAXException {
+	
+				System.out.println("End Element :" + qName);
+				if (qName.equalsIgnoreCase("staff") && staftag) {
+					new MainDao().saveRecord(staff);
+					staftag = false;
+				}
+	
+			}			
+			public void characters(char ch[], int start, int length) throws SAXException {
+				if (bfname) {
+					System.out.println("First Name : " + new String(ch, start, length));
+					staff.setFirstName(new String(ch, start, length));
+					bfname = false;
+				}
+				if (blname) {
+					System.out.println("Last Name : " + new String(ch, start, length));
+					staff.setLastName(new String(ch, start, length));
+					blname = false;
+				}
+	
+				if (bnname) {
+					System.out.println("Nick Name : " + new String(ch, start, length));
+					staff.setNickname(new String(ch, start, length));
+					bnname = false;
+				}
+	
+				if (bsalary) {
+					System.out.println("Salary : " + new String(ch, start, length));
+					staff.setSalary(Double.valueOf(new String(ch, start, length)));
+					bsalary = false;
+				}
+	
+			}
+	
+		 };
+
+	       saxParser.parse("C:\\testt\\test.xml", handler);
+	 
+	     } catch (Exception e) {
+	       e.printStackTrace();
+	     }
+	  
+	   }
+}
